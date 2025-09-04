@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/services.dart';
 
-typedef KeyboardHeightCallback = void Function(double height);
+typedef KeyboardHeightCallback = void Function(double height, Duration? duration);
 
 class KeyboardHeightPlugin {
     static const EventChannel _keyboardHeightEventChannel = EventChannel('keyboardHeightEventChannel');
@@ -15,8 +15,20 @@ class KeyboardHeightPlugin {
         }
         _keyboardHeightSubscription = _keyboardHeightEventChannel
         .receiveBroadcastStream()
-        .listen((dynamic height) {
-            callback(height as double);
+        .listen((dynamic params) {
+            if (params is Map<String, dynamic>) {
+                final keyboardHeight = params['keyboardHeight'];
+                if (keyboardHeight is double) {
+                    Duration? duration = null;
+                    final dur = params['duration'];
+                    if (dur is double) {
+                        duration = Duration(milliseconds: (dur * 1000).toInt());
+                    }
+                    callback(keyboardHeight, duration);
+                }
+            } else if (params is double) {
+                callback(params, null);
+            }
         });
     }
 

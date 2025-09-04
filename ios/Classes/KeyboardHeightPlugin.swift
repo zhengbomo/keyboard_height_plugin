@@ -38,18 +38,38 @@ public class KeyboardHeightPlugin: NSObject, FlutterPlugin, FlutterStreamHandler
   @objc private func keyboardWillShow(notification: NSNotification) {
     if let userInfo = notification.userInfo,
        let keyboardFrame = userInfo[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
-      eventSink?(NSNumber(value: keyboardFrame.height))
+      var param: [String: Any] = [
+        "keyboardHeight": keyboardFrame.height,
+      ]
+      if let duration = userInfo[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double {
+        param["duration"] = duration
+      }
+      eventSink?(param)
     }
   }
 
   @objc private func keyboardWillHide(notification: NSNotification) {
-    eventSink?(NSNumber(value: 0.0))
+    if let userInfo = notification.userInfo {
+      var param: [String: Any] = [
+        "keyboardHeight": 0,
+      ]
+      if let duration = userInfo[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double {
+        param["duration"] = duration
+      }
+      eventSink?(param)
+    }
   }
     
   @objc private func keyboardWillChangeFrame(notification: NSNotification) {
     if let userInfo = notification.userInfo,
        let keyboardFrame = userInfo[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
-      eventSink?(NSNumber(value: keyboardFrame.height))
+      var param: [String: Any] = [
+        "keyboardHeight": keyboardFrame.height,
+      ]
+      if let duration = userInfo[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double {
+        param["duration"] = duration
+      }
+      eventSink?(param)
     }
   }
 }
