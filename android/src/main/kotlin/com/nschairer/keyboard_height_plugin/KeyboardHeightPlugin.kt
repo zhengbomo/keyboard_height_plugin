@@ -3,6 +3,8 @@ import android.graphics.Rect
 import android.os.Build
 import androidx.annotation.NonNull
 import android.view.ViewTreeObserver
+import android.view.WindowInsets
+import android.view.WindowInsetsAnimation
 import androidx.annotation.RequiresApi
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.EventChannel
@@ -14,6 +16,7 @@ class KeyboardHeightPlugin : FlutterPlugin, EventChannel.StreamHandler, Activity
     private var eventSink: EventChannel.EventSink? = null
     private var eventChannel: EventChannel? = null
     private var activityPluginBinding: ActivityPluginBinding? = null
+    private var keyboardAnimationDuration: Long? = null
 
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         eventChannel = EventChannel(flutterPluginBinding.binaryMessenger, keyboardHeightEventChannelName)
@@ -27,6 +30,13 @@ class KeyboardHeightPlugin : FlutterPlugin, EventChannel.StreamHandler, Activity
     override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
         eventSink = events
         val rootView = activityPluginBinding?.activity?.window?.decorView?.rootView
+        
+        // Android 11+ uses WindowInsetsAnimation to listen for keyboard animations
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && rootView != null) {
+            setupWindowInsetsAnimation(rootView, events)
+        }
+        
+        // Keep the original layout listener as a fallback
         rootView?.viewTreeObserver?.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
             override fun onGlobalLayout() {
                 val r = Rect()
@@ -41,11 +51,21 @@ class KeyboardHeightPlugin : FlutterPlugin, EventChannel.StreamHandler, Activity
                 val displayMetrics = activityPluginBinding?.activity?.resources?.displayMetrics
                 val logicalKeypadHeight = keypadHeight / (displayMetrics?.density ?: 1f)
 
+                // Build the result Map
+                val result = mutableMapOf<String, Any>()
+                
                 if (keypadHeight > screenHeight * 0.15) {
-                    events?.success(logicalKeypadHeight.toDouble())
+                    result["keyboardHeight"] = logicalKeypadHeight.toDouble()
                 } else {
-                    events?.success(0.0)
+                    result["keyboardHeight"] = 0.0
                 }
+                
+                // Add animation duration (Android 11+ only)
+                keyboardAnimationDuration?.let {
+                    result["duration"] = it.toDouble() / 1000.0 // Convert to seconds
+                }
+                
+                events?.success(result)
             }
         })
     }
@@ -72,6 +92,35 @@ class KeyboardHeightPlugin : FlutterPlugin, EventChannel.StreamHandler, Activity
             val systemWindowInsetBottom = rootWindowInsets.systemWindowInsetBottom
             systemWindowInsetBottom > 0
         }
+    }
+    
+    @RequiresApi(Build.VERSION_CODES.R)
+    private fun setupWindowInsetsAnimation(rootView: android.view.View, events: EventChannel.EventSink?) {
+        rootView.setWindowInsetsAnimationCallback(object : WindowInsetsAnimation.Callback(DISPATCH_MODE_STOP) {
+            override fun onProgress(
+                insets: WindowInsets,
+                runningAnimations: MutableList<WindowInsetsAnimation>
+            ): WindowInsets {
+                return insets
+            }
+            
+            override fun onPrepare(animation: WindowInsetsAnimation) {
+                super.onPrepare(animation)
+                // Check if it's a keyboard (IME) animation
+                if (animation.typeMask and WindowInsets.Type.ime() != 0) {
+                    // Get animation duration in milliseconds
+                    keyboardAnimationDuration = animation.durationMillis
+                }
+            }
+            
+            override fun onEnd(animation: WindowInsetsAnimation) {
+                super.onEnd(animation)
+                // Clear duration after animation ends
+                if (animation.typeMask and WindowInsets.Type.ime() != 0) {
+                    keyboardAnimationDuration = null
+                }
+            }
+        })
     }
     
     // Implement ActivityAware methods
