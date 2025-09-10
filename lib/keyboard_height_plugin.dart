@@ -18,13 +18,13 @@ class KeyboardHeightPlugin {
         .listen((dynamic params) {
             if (params is Map<dynamic, dynamic>) {
                 final keyboardHeight = params['keyboardHeight'];
-                if (keyboardHeight is double) {
+                if (keyboardHeight is num) {
                     Duration? duration = null;
                     final dur = params['duration'];
                     if (dur is double) {
                         duration = Duration(milliseconds: (dur * 1000).toInt());
                     }
-                    callback(keyboardHeight, duration);
+                    callback(keyboardHeight.toDouble(), duration);
                 }
             } else if (params is double) {
                 callback(params, null);
