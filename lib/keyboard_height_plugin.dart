@@ -16,7 +16,7 @@ class KeyboardHeightPlugin {
         _keyboardHeightSubscription = _keyboardHeightEventChannel
         .receiveBroadcastStream()
         .listen((dynamic params) {
-            if (params is Map<String, dynamic>) {
+            if (params is Map<dynamic, dynamic>) {
                 final keyboardHeight = params['keyboardHeight'];
                 if (keyboardHeight is double) {
                     Duration? duration = null;
