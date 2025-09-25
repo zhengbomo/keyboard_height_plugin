@@ -4,8 +4,8 @@ version: 0.1.5
 repository: https://github.com/nschairer/keyboard_height_plugin
 
 environment:
-  sdk: '>=2.19.6 <3.0.0'
-  flutter: ">=2.5.0"
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.10.0"
 
 dependencies:
   flutter:
@@ -38,6 +38,9 @@ flutter:
         package: com.nschairer.keyboard_height_plugin
         pluginClass: KeyboardHeightPlugin
       ios:
+        pluginClass: KeyboardHeightPlugin
+      ohos:
+        package: com.nschairer.keyboard_height_plugin
         pluginClass: KeyboardHeightPlugin
 
   # To add assets to your plugin package, add an assets section, like this:
